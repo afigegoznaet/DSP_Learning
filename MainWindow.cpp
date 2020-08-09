@@ -9,7 +9,7 @@
 #include <QDebug>
 constexpr auto X_SAMPLES = 1024;
 constexpr auto SampleRate = 48000;
-constexpr auto BitDepth = 16;
+constexpr auto BitDepth = 32;
 using namespace QtCharts;
 MainWindow::MainWindow(QWidget *parent)
 	: QMainWindow(parent), ui(new Ui::MainWindow), amplitudes(new QLineSeries) {
@@ -23,14 +23,18 @@ MainWindow::MainWindow(QWidget *parent)
 
 	ui->volumeSlider->setValue(90);
 	audioFile = new SoundFile(this);
+	connect(audioFile, SIGNAL(dataRead(char *, int)), this,
+			SLOT(showData(char *, int)), Qt::QueuedConnection);
+
 	audioFile->setFrequency(1);
+	qDebug() << audioFile->open(QIODevice::ReadOnly);
 }
 
 MainWindow::~MainWindow() { delete ui; }
 
 
 void MainWindow::setupAmplitudeChart() {
-	auto m_chart = ui->signalView->chart();
+	auto chart = ui->signalView->chart();
 
 	// m_amplitudes->setUseOpenGL(true);
 	// m_chart->addSeries(m_amplitudes);
@@ -45,16 +49,20 @@ void MainWindow::setupAmplitudeChart() {
 	axisY->setTitleText("Audio level");
 
 
-	m_chart->addAxis(axisX, Qt::AlignBottom);
-	m_chart->addAxis(axisY, Qt::AlignLeft);
-	m_chart->addSeries(amplitudes);
+	chart->addAxis(axisX, Qt::AlignBottom);
+	chart->addAxis(axisY, Qt::AlignLeft);
+	chart->addSeries(amplitudes);
 	amplitudes->attachAxis(axisX);
 	amplitudes->attachAxis(axisY);
 
-	m_chart->legend()->hide();
-	m_chart->setTitle("Input data");
+	chart->legend()->hide();
+	chart->setTitle("Input data");
 
 	amplitudes->setUseOpenGL(true);
+
+	internalBuffer.reserve(X_SAMPLES);
+	for (int i = 0; i < X_SAMPLES; ++i)
+		internalBuffer.append(QPointF(i, 0));
 }
 
 
@@ -69,11 +77,17 @@ void MainWindow::setupAudio() {
 	format.setSampleSize(BitDepth);
 	format.setCodec("audio/pcm");
 	format.setByteOrder(QAudioFormat::LittleEndian);
-	format.setSampleType(QAudioFormat::SignedInt);
+	format.setSampleType(QAudioFormat::Float);
 
 	if (!deviceInfo.isFormatSupported(format)) {
 		qWarning() << "Default format not supported - trying to use nearest";
 		format = deviceInfo.nearestFormat(format);
+		qDebug() << format.sampleRate();
+		qDebug() << format.channelCount();
+		qDebug() << format.sampleSize();
+		qDebug() << format.codec();
+		qDebug() << format.byteOrder();
+		qDebug() << format.sampleType();
 	}
 
 	audioOutput = new QAudioOutput(deviceInfo, format, this);
@@ -99,44 +113,17 @@ void MainWindow::showInfo() {
 }
 
 
-void MainWindow::showData(char *data, qint64 len) {
-	if (!deviceReady)
+void MainWindow::showData(char *data, int len) {
+	qDebug() << "show data";
+	if (!chartReady)
 		return;
-	deviceReady = false;
-	if (m_buffer.isEmpty()) {
-		m_buffer.reserve(maxSamples);
-		for (int i = 0; i < maxSamples; ++i)
-			m_buffer.append(QPointF(i, 0));
-	}
+	chartReady = false;
 
-	int resolution = internalBuffer.size() / maxSamples;
-	resolution /= bytesPerSample;
-	long long divisor = 0;
-	switch (bytesPerSample) {
-	default:
-		divisor = CHAR_MAX;
-		break;
-	case 2:
-		divisor = SHRT_MAX;
-		break;
-	case 3:
-		divisor |= 0x7fffff;
-		break;
-	case 4:
-		divisor = LLONG_MAX;
-		break;
-	}
+	const auto *actualData = reinterpret_cast<const float *>(data);
 
-	// std::vector<short> data[transferredBytes/2];
-	const auto *data =
-		reinterpret_cast<const short *>(internalBuffer.data().data());
-	for (int i = marker; i < transferredBytes / bytesPerSample;
-		 i += resolution) {
-		m_buffer[i / resolution].setY(((double)data[i]) / divisor);
-		marker++;
+	for (int i = 0; i < X_SAMPLES; i++) {
+		internalBuffer[i].setY(actualData[i]);
 	}
-	if (marker >= maxSamples)
-		marker = 0;
-	m_series->replace(m_buffer);
-	deviceReady = true;
+	amplitudes->replace(internalBuffer);
+	chartReady = true;
 }

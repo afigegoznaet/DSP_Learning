@@ -7,17 +7,17 @@ class SoundFile : public QFile {
 	Q_OBJECT
 public:
 	explicit SoundFile(QObject *parent = nullptr);
-	using QFile::open;
-	bool open(const QString &fileName);
-	void setSamplerate(int freq) { inputFrequency = freq; }
+	bool open(OpenMode flags) override;
+	void setSampleRate(int freq) { samplingFrequency = freq; }
 	void setBitDepth(int bitsPerSample) { bytesPerSample = bitsPerSample / 8; }
 	void setFrequency(int hertz);
 	qint64 readData(char *data, qint64 len) override;
+signals:
+	void dataRead(char *data, int len);
 
 private:
 	int		bytesPerSample = 2;
-	int		inputFrequency = 48000;
-	int		frequency;
+	int		samplingFrequency = 48000;
 	QBuffer internalBuffer;
 };
 
