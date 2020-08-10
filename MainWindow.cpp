@@ -114,11 +114,13 @@ void MainWindow::showInfo() {
 
 
 void MainWindow::showData(char *data, int len) {
-	qDebug() << "show data";
+	// qDebug() << "show data";
 	if (!chartReady)
 		return;
 	chartReady = false;
 
+	constexpr int lengthInBytes = X_SAMPLES * sizeof(float);
+	Q_ASSERT(lengthInBytes <= len);
 	const auto *actualData = reinterpret_cast<const float *>(data);
 
 	for (int i = 0; i < X_SAMPLES; i++) {
