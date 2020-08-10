@@ -26,6 +26,6 @@ void SoundFile::setSineFrequency(int hertz) {
 	QByteArray arr;
 	float	   sinusoid[1];
 
-	arr.append(reinterpret_cast<char *>(sinusoid), sizeof(float));
+	arr.append(reinterpret_cast<char *>(sinusoid), 1 * sizeof(float));
 	internalBuffer.setData(arr);
 }
