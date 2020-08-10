@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include <QBuffer>
+#include <mutex>
 
 namespace QtCharts {
 	class QChart;
@@ -29,7 +30,7 @@ public:
 	~MainWindow();
 
 public slots:
-	void showData(char *data, int len);
+	void showData(const char *data, int len);
 
 private slots:
 	void on_startStopButton_toggled(bool checked);
@@ -42,5 +43,7 @@ private:
 	SoundFile *			   audioFile;
 	QVector<QPointF>	   internalBuffer;
 	std::atomic_bool	   chartReady{true};
+	unsigned int		   bufferIndex = 0;
+	// std::mutex bufferMutex;
 };
 #endif // MAINWINDOW_HPP

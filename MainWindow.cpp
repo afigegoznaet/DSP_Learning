@@ -6,11 +6,15 @@
 #include <QLineSeries>
 #include <QAudioDeviceInfo>
 #include <QAudioOutput>
+#include <QtConcurrent/QtConcurrent>
 #include <QDebug>
 constexpr auto X_SAMPLES = 1024;
 constexpr auto SampleRate = 48000;
 constexpr auto BitDepth = 32;
 using namespace QtCharts;
+
+char bufferToShow[X_SAMPLES * sizeof(float)];
+
 MainWindow::MainWindow(QWidget *parent)
 	: QMainWindow(parent), ui(new Ui::MainWindow), amplitudes(new QLineSeries) {
 	ui->setupUi(this);
@@ -23,10 +27,12 @@ MainWindow::MainWindow(QWidget *parent)
 
 	ui->volumeSlider->setValue(90);
 	audioFile = new SoundFile(this);
-	connect(audioFile, SIGNAL(dataRead(char *, int)), this,
-			SLOT(showData(char *, int)), Qt::QueuedConnection);
+	connect(audioFile, &SoundFile::dataRead, this,
+			[this](const char *data, int len) {
+				QtConcurrent::run(this, &MainWindow::showData, data, len);
+			});
 
-	audioFile->setFrequency(1);
+	audioFile->setSineFrequency(2200);
 	qDebug() << audioFile->open(QIODevice::ReadOnly);
 }
 
@@ -60,11 +66,10 @@ void MainWindow::setupAmplitudeChart() {
 
 	amplitudes->setUseOpenGL(true);
 
-	internalBuffer.reserve(X_SAMPLES);
-	for (int i = 0; i < X_SAMPLES; ++i)
-		internalBuffer.append(QPointF(i, 0));
+	for (auto i = 0; i < X_SAMPLES; i++)
+		internalBuffer.append({float(i), 0});
+	amplitudes->replace(internalBuffer);
 }
-
 
 void MainWindow::setupAudio() {
 
@@ -91,6 +96,8 @@ void MainWindow::setupAudio() {
 	}
 
 	audioOutput = new QAudioOutput(deviceInfo, format, this);
+	if (audioOutput->bufferSize() > X_SAMPLES * sizeof(float))
+		audioOutput->setBufferSize(X_SAMPLES * sizeof(float));
 }
 
 void MainWindow::on_startStopButton_toggled(bool checked) {
@@ -112,20 +119,17 @@ void MainWindow::showInfo() {
 	ui->infoLabel->setText(infoString);
 }
 
-
-void MainWindow::showData(char *data, int len) {
-	// qDebug() << "show data";
+void MainWindow::showData(const char *data, int len) {
 	if (!chartReady)
 		return;
 	chartReady = false;
-
-	constexpr int lengthInBytes = X_SAMPLES * sizeof(float);
-	Q_ASSERT(lengthInBytes <= len);
-	const auto *actualData = reinterpret_cast<const float *>(data);
-
-	for (int i = 0; i < X_SAMPLES; i++) {
-		internalBuffer[i].setY(actualData[i]);
+	memcpy(bufferToShow, data, len);
+	float *floatData = reinterpret_cast<float *>(bufferToShow);
+	for (unsigned long i = 0; i < len / sizeof(float); i++) {
+		internalBuffer[bufferIndex++ % X_SAMPLES].setY(floatData[i]);
+		if (0 == bufferIndex % X_SAMPLES)
+			amplitudes->replace(internalBuffer);
 	}
-	amplitudes->replace(internalBuffer);
+
 	chartReady = true;
 }

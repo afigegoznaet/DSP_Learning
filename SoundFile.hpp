@@ -8,16 +8,16 @@ class SoundFile : public QFile {
 public:
 	explicit SoundFile(QObject *parent = nullptr);
 	bool open(OpenMode flags) override;
-	void setSampleRate(int freq) { samplingFrequency = freq; }
+	void setSampleRate(int rate) { samplingRate = rate; }
 	void setBitDepth(int bitsPerSample) { bytesPerSample = bitsPerSample / 8; }
-	void setFrequency(int hertz);
+	void setSineFrequency(int hertz);
 	qint64 readData(char *data, qint64 len) override;
 signals:
-	void dataRead(char *data, int len);
+	void dataRead(const char *data, int len);
 
 private:
-	int		bytesPerSample = 2;
-	int		samplingFrequency = 48000;
+	int		bytesPerSample = 4;
+	int		samplingRate = 48000;
 	QBuffer internalBuffer;
 };
 
