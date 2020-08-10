@@ -14,9 +14,7 @@ qint64 SoundFile::readData(char *data, qint64 len) {
 		internalBuffer.seek(0);
 	}
 	auto bytesRead = internalBuffer.read(data, len);
-	emit dataRead(
-		&internalBuffer.data().data()[internalBuffer.pos() - bytesRead],
-		bytesRead);
+	emit dataRead(data, bytesRead);
 	return bytesRead;
 }
 
