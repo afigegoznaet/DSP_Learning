@@ -1,6 +1,7 @@
 #include "SoundFile.hpp"
 #include <QtMath>
 #include <QDebug>
+#include <random>
 SoundFile::SoundFile(QObject *parent) : QFile(parent) {}
 
 bool SoundFile::open(OpenMode flags) {
@@ -13,6 +14,7 @@ qint64 SoundFile::readData(char *data, qint64 len) {
 	if (!internalBuffer.bytesAvailable()) {
 		internalBuffer.seek(0);
 	}
+	qDebug() << internalBuffer.size();
 	auto bytesRead = internalBuffer.read(data, len);
 	emit dataRead(data, bytesRead);
 	return bytesRead;
@@ -20,10 +22,15 @@ qint64 SoundFile::readData(char *data, qint64 len) {
 
 void SoundFile::setSineFrequency(int hertz) {
 	// to be reimplemented
+	std::random_device			   dev;
+	std::mt19937				   generator(dev());
+	std::uniform_real_distribution distribution(-1., 1.);
+	QByteArray					   arr;
+	float						   sinusoid[SampleRate];
+	for (int i = 0; i < SampleRate; i++) {
+		sinusoid[i] = distribution(generator);
+	}
 
-	QByteArray arr;
-	float	   sinusoid[1];
-
-	arr.append(reinterpret_cast<char *>(sinusoid), 1 * sizeof(float));
+	arr.append(reinterpret_cast<char *>(sinusoid), SampleRate * sizeof(float));
 	internalBuffer.setData(arr);
 }

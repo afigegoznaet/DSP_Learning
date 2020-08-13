@@ -8,12 +8,10 @@
 #include <QAudioOutput>
 #include <QtConcurrent/QtConcurrent>
 #include <QDebug>
-constexpr auto X_SAMPLES = 1024;
-constexpr auto SampleRate = 48000;
-constexpr auto BitDepth = 32;
+
 using namespace QtCharts;
 
-char bufferToShow[X_SAMPLES * sizeof(float)];
+char bufferToShow[SampleRate * sizeof(float)];
 
 MainWindow::MainWindow(QWidget *parent)
 	: QMainWindow(parent), ui(new Ui::MainWindow), amplitudes(new QLineSeries) {

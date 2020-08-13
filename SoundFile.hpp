@@ -2,7 +2,9 @@
 #define SOUNDFILE_HPP
 #include <QFile>
 #include <QBuffer>
-
+constexpr auto X_SAMPLES = 1024;
+constexpr auto SampleRate = 48000;
+constexpr auto BitDepth = 32;
 class SoundFile : public QFile {
 	Q_OBJECT
 public:
