@@ -3,7 +3,7 @@
 #include <QFile>
 #include <QBuffer>
 
-constexpr auto X_VALS = 4096;
+constexpr auto X_VALS = 4000;
 constexpr auto SampleRate = 48000;
 constexpr auto BitDepth = 32;
 class SoundFile : public QFile {
@@ -14,7 +14,7 @@ public:
 	void   close() override;
 	void   setSampleRate(int rate) { samplingRate = rate; }
 	void   setBitDepth(int bitsPerSample) { bytesPerSample = bitsPerSample / 8; }
-	void   setSineFrequency(int hertz);
+	void   setSineFrequency(const int hertz);
 	qint64 readData(char *data, qint64 len) override;
 signals:
 	void dataRead(const char *data, int len);
