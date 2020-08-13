@@ -10,7 +10,6 @@
 #include <QDebug>
 
 using namespace QtCharts;
-
 char bufferToShow[SampleRate * sizeof(float)];
 
 MainWindow::MainWindow(QWidget *parent)
@@ -48,7 +47,7 @@ void MainWindow::setupAmplitudeChart() {
 	QValueAxis *axisX = new QValueAxis;
 	QValueAxis *axisY = new QValueAxis;
 
-	axisX->setRange(0, SampleRate);
+	axisX->setRange(0, X_VALS);
 	axisX->setLabelFormat("%g");
 	axisX->setTitleText("Data Points");
 
@@ -67,7 +66,7 @@ void MainWindow::setupAmplitudeChart() {
 
 	amplitudes->setUseOpenGL(true);
 
-	for (auto i = 0; i < SampleRate; i++)
+	for (auto i = 0; i < X_VALS; i++)
 		internalBuffer.append({float(i), 0});
 	amplitudes->replace(internalBuffer);
 }
@@ -130,8 +129,8 @@ void MainWindow::showData(const char *data, int len) {
 
 	float *floatData = reinterpret_cast<float *>(bufferToShow);
 	for (unsigned long i = 0; i < len / sizeof(float); i++) {
-		internalBuffer[bufferIndex++ % SampleRate].setY(floatData[i]);
-		if (0 == bufferIndex % SampleRate)
+		internalBuffer[bufferIndex++ % X_VALS].setY(floatData[i]);
+		if (0 == bufferIndex % X_VALS)
 			amplitudes->replace(internalBuffer);
 	}
 

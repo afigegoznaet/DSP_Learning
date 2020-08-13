@@ -26,16 +26,24 @@ qint64 SoundFile::readData(char *data, qint64 len) {
 }
 
 void SoundFile::setSineFrequency(int hertz) {
+
+	QByteArray arr;
+	float	   sinusoid[X_VALS];
+
+	/*
 	// to be reimplemented
 	std::random_device			   dev;
 	std::mt19937				   generator(dev());
 	std::uniform_real_distribution distribution(-1., 1.);
-	QByteArray					   arr;
-	float						   sinusoid[SampleRate];
+
+
 	for (int i = 0; i < SampleRate; i++) {
 		sinusoid[i] = distribution(generator);
 	}
-
-	arr.append(reinterpret_cast<char *>(sinusoid), SampleRate * sizeof(float));
+*/
+	for (int i = 0; i < X_VALS; i++) {
+		sinusoid[i] = sin(hertz * i * 2 * M_PI / X_VALS);
+	}
+	arr.append(reinterpret_cast<char *>(sinusoid), X_VALS * sizeof(float));
 	internalBuffer.setData(arr);
 }
