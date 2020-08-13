@@ -97,14 +97,14 @@ void MainWindow::setupFrequencyChart() {
 	axisX->setTitleText("Spectrogram");
 
 	axisX->append("0", 0);
-	/*
+
 	axisX->append("200", getFreqPos(200));
 	axisX->append("6000", getFreqPos(6000));
 	axisX->append("7500", getFreqPos(7500));
 	axisX->append("12000", getFreqPos(12000));
 	axisX->append("18000", getFreqPos(18000));
 	axisX->append("24000", getFreqPos(24000));
-*/
+
 	axisY->setRange(-F_VALS, F_VALS);
 	axisY->setTitleText("Amplitude");
 
