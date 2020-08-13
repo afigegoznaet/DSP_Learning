@@ -34,7 +34,10 @@ MainWindow::MainWindow(QWidget *parent)
 	qDebug() << audioFile->open(QIODevice::ReadOnly);
 }
 
-MainWindow::~MainWindow() { delete ui; }
+MainWindow::~MainWindow() {
+	audioFile->close();
+	delete ui;
+}
 
 
 void MainWindow::setupAmplitudeChart() {
@@ -45,7 +48,7 @@ void MainWindow::setupAmplitudeChart() {
 	QValueAxis *axisX = new QValueAxis;
 	QValueAxis *axisY = new QValueAxis;
 
-	axisX->setRange(0, X_SAMPLES);
+	axisX->setRange(0, SampleRate);
 	axisX->setLabelFormat("%g");
 	axisX->setTitleText("Data Points");
 
@@ -64,7 +67,7 @@ void MainWindow::setupAmplitudeChart() {
 
 	amplitudes->setUseOpenGL(true);
 
-	for (auto i = 0; i < X_SAMPLES; i++)
+	for (auto i = 0; i < SampleRate; i++)
 		internalBuffer.append({float(i), 0});
 	amplitudes->replace(internalBuffer);
 }
@@ -94,8 +97,8 @@ void MainWindow::setupAudio() {
 	}
 
 	audioOutput = new QAudioOutput(deviceInfo, format, this);
-	if (audioOutput->bufferSize() > X_SAMPLES * sizeof(float))
-		audioOutput->setBufferSize(X_SAMPLES * sizeof(float));
+	if (audioOutput->bufferSize() > SampleRate * sizeof(float))
+		audioOutput->setBufferSize(SampleRate * sizeof(float));
 }
 
 void MainWindow::on_startStopButton_toggled(bool checked) {
@@ -121,11 +124,14 @@ void MainWindow::showData(const char *data, int len) {
 	if (!chartReady)
 		return;
 	chartReady = false;
+	//Q_ASSERT(len == SampleRate);
 	memcpy(bufferToShow, data, len);
+
+
 	float *floatData = reinterpret_cast<float *>(bufferToShow);
 	for (unsigned long i = 0; i < len / sizeof(float); i++) {
-		internalBuffer[bufferIndex++ % X_SAMPLES].setY(floatData[i]);
-		if (0 == bufferIndex % X_SAMPLES)
+		internalBuffer[bufferIndex++ % SampleRate].setY(floatData[i]);
+		if (0 == bufferIndex % SampleRate)
 			amplitudes->replace(internalBuffer);
 	}
 

@@ -10,11 +10,16 @@ bool SoundFile::open(OpenMode flags) {
 	return true;
 }
 
+void SoundFile::close() {
+	setOpenMode(QIODevice::NotOpen);
+	internalBuffer.close();
+}
+
 qint64 SoundFile::readData(char *data, qint64 len) {
 	if (!internalBuffer.bytesAvailable()) {
 		internalBuffer.seek(0);
 	}
-	qDebug() << internalBuffer.size();
+	//qDebug() << internalBuffer.size();
 	auto bytesRead = internalBuffer.read(data, len);
 	emit dataRead(data, bytesRead);
 	return bytesRead;
