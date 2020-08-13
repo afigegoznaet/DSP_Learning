@@ -10,6 +10,7 @@
 #include <QtConcurrent/QtConcurrent>
 #include <QDebug>
 
+std::atomic_bool trueFlag{true};
 using namespace QtCharts;
 char sinToShow[SampleRate * sizeof(float)];
 char specToShow[SampleRate * sizeof(float)];
@@ -32,8 +33,10 @@ MainWindow::MainWindow(QWidget *parent)
 				QtConcurrent::run(this, &MainWindow::showData, data, len);
 			});
 
+	connect(this, SIGNAL(startShowSpectrum(const char *, int)), this, SLOT(showSpectrum(const char *, int)));
 	audioFile->setSineFrequency(200);
 	qDebug() << audioFile->open(QIODevice::ReadOnly);
+	setWindowState(Qt::WindowMaximized);
 }
 
 MainWindow::~MainWindow() {
@@ -69,12 +72,15 @@ void MainWindow::setupAmplitudeChart() {
 
 	amplitudes->setUseOpenGL(true);
 
-	for (auto i = 0; i < X_VALS; i++)
-		amplitudesBuffer.append({float(i), 0});
-	amplitudes->replace(amplitudesBuffer);
+	for (auto i = 0; i < X_VALS; i++) {
+		ampBuf0.append({float(i), 0});
+		ampBuf1.append({float(i), 0});
+	}
+	amplitudesBuffer = &ampBuf0;
+	amplitudes->replace(*amplitudesBuffer);
 }
 int MainWindow::getFreqPos(int freq) {
-	return freq * X_VALS * 2 / SampleRate;
+	return freq * F_VALS * 2 / SampleRate;
 }
 
 void MainWindow::setupFrequencyChart() {
@@ -86,19 +92,20 @@ void MainWindow::setupFrequencyChart() {
 	axisX->setLabelsPosition(QCategoryAxis::AxisLabelsPositionOnValue);
 	QValueAxis *axisY = new QValueAxis;
 
-	axisX->setRange(0, X_VALS);
+	axisX->setRange(0, F_VALS);
 	axisX->setLabelFormat("%g");
 	axisX->setTitleText("Spectrogram");
 
 	axisX->append("0", 0);
+	/*
 	axisX->append("200", getFreqPos(200));
 	axisX->append("6000", getFreqPos(6000));
 	axisX->append("7500", getFreqPos(7500));
 	axisX->append("12000", getFreqPos(12000));
 	axisX->append("18000", getFreqPos(18000));
 	axisX->append("24000", getFreqPos(24000));
-
-	axisY->setRange(-X_VALS, X_VALS);
+*/
+	axisY->setRange(-F_VALS, F_VALS);
 	axisY->setTitleText("Amplitude");
 
 	chart->addAxis(axisX, Qt::AlignBottom);
@@ -112,7 +119,7 @@ void MainWindow::setupFrequencyChart() {
 
 	frequencies->setUseOpenGL(true);
 
-	for (auto i = 0; i < X_VALS; i++)
+	for (auto i = 0; i < F_VALS; i++)
 		freqBuffer.append({float(i), 0});
 	frequencies->replace(freqBuffer);
 }
@@ -174,18 +181,22 @@ void MainWindow::showData(const char *data, int len) {
 
 
 	float *floatData = reinterpret_cast<float *>(sinToShow);
-	for (unsigned long i = 0; i < len / sizeof(float); i++) {
-		amplitudesBuffer[bufferIndex++ % X_VALS].setY(floatData[i]);
-		if (0 == bufferIndex % X_VALS)
-			amplitudes->replace(amplitudesBuffer);
+	for (unsigned long i = 0; i < len / sizeof(float); i++, bufferIndex++) {
+		bufferIndex %= X_VALS;
+		if (0 == bufferIndex) {
+			amplitudes->replace(*amplitudesBuffer);
+			if (amplitudesBuffer == &ampBuf0)
+				amplitudesBuffer = &ampBuf1;
+			else
+				amplitudesBuffer = &ampBuf0;
+		}
+		(*amplitudesBuffer)[bufferIndex].setY(floatData[i]);
 	}
-	std::call_once(freqFlag, &MainWindow::showSpectrum, this, sinToShow, len);
-
+	if (freqShown)
+		showSpectrum(data, len);
 	chartReady = true;
 }
 
+
 void MainWindow::showSpectrum(const char *data, int len) {
-	Q_ASSERT(len * sizeof(float) >= X_VALS);
-	memcpy(specToShow, data, len);
-	const float *floatData = reinterpret_cast<const float *>(data);
 }

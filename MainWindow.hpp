@@ -10,6 +10,7 @@ namespace QtCharts {
 	class QLineSeries;
 }
 
+class QBarSet;
 class QAudioOutput;
 class SoundFile;
 
@@ -26,6 +27,8 @@ private:
 	void setupFrequencyChart();
 	void setupAudio();
 	int	 getFreqPos(int freq);
+signals:
+	void startShowSpectrum(const char *data, int len);
 
 public:
 	MainWindow(QWidget *parent = nullptr);
@@ -45,12 +48,15 @@ private:
 	QtCharts::QLineSeries *frequencies;
 	QAudioOutput *		   audioOutput;
 	SoundFile *			   audioFile;
-	QVector<QPointF>	   amplitudesBuffer;
-	QVector<QPointF>	   freqBuffer;
-	std::atomic_bool	   chartReady{true};
-	unsigned int		   bufferIndex = 0;
 
-	std::once_flag freqFlag;
-	// std::mutex bufferMutex;
+
+	QVector<QPointF>  ampBuf0;
+	QVector<QPointF>  ampBuf1;
+	QVector<QPointF> *amplitudesBuffer;
+	QVector<QPointF>  freqBuffer;
+	std::atomic_bool  chartReady{true};
+	unsigned int	  bufferIndex = 0;
+
+	std::atomic_bool freqShown{true};
 };
 #endif // MAINWINDOW_HPP

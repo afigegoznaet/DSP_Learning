@@ -4,6 +4,7 @@
 #include <QBuffer>
 
 constexpr auto X_VALS = 4000;
+constexpr auto F_VALS = 4000;
 constexpr auto SampleRate = 48000;
 constexpr auto BitDepth = 32;
 class SoundFile : public QFile {
